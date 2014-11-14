@@ -28,6 +28,9 @@ DIALOG="/usr/bin/dialog"
 export LC_CTYPE="pt_BR.UTF-8"
 LOG_FILE=/home/suporte/log_suporte.txt
 data=`date`
+# Pé de macaco para conseguir dar um exit numa subfunction
+trap "exit 1" TERM
+export TOP_PID=$$
 #############################################################
 #-----------------------------------------------------------
 #               UTILITÁRIOS DO DIALOG
@@ -54,10 +57,13 @@ define_option(){
 #
 #   Função para definir qual script será executado
 #
+# $SCRIPT = Variável Global
+#
 # OBS: O Nome declarado no menu deve ser comparado nesse IF
 #       para definir qual script será chamado
 #------------------------------------------------------------
 choose_script(){
+    echo "$1" > /home/suporte/variavel.log
     if [ "$1" == "Oracle Status" ]; then
         SCRIPT=$(oracle_status)
     elif [ "$1" == "Iniciar Oracle" ]; then
@@ -71,9 +77,8 @@ choose_script(){
     elif [ "$1" == "Listener Status" ]; then
         SCRIPT=$(listener_status)
     else
-        exit 0
+        kill -s TERM ${TOP_PID}
     fi
-    echo ${SCRIPT}
 }
 ############################################################
 #-----------------------------------------------------------
@@ -124,7 +129,7 @@ do
        Listener\ Status    'Verifica o status de todos os listeners' \
        Parar\ Listener    'Desliga todos os listeners do ambiente' \
        Iniciar\ Listener    'Desliga todos os listeners do ambiente' )
-    SCRIPT=$(choose_script "$RESPOSTA")
+    choose_script "$RESPOSTA"
     rebuild_log
     ${SCRIPT} >> ${LOG_FILE} 2>&1 &
     (dialog --colors --no-kill --backtitle "$(backtitle)" --title 'Aguarde o Resultado...' --tailbox $LOG_FILE 80 120 )
