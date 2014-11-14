@@ -1,3 +1,7 @@
+CABECALHO = "Escolha uma das ações abaixo: \n Capa de Pique"
+    #${DIALOG} --title 'LB2 Consultoria - Leading Business to The Next Level' --infobox 'Servidor: LB2-Dev12c' 120 50 &
+    RESPOSTA=$(${DIALOG} --stdout --backtitle 'LB2 - Leading Business to the Next Level' \
+    --title 'OPÇÕES' --menu ${CABECALHO} 0 0 0
 #!/bin/bash
 #
 #project	 :4Linux Free Software Solutions
@@ -432,3 +436,6 @@ EOF
 	dialog  --title "Instalacao Completa" --msgbox "Pressione ENTER para terminar." 0 0
 	exit 0
 fi
+
+
+

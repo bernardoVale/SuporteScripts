@@ -14,6 +14,7 @@ oracleStatus(){
 	echo ""
 }
 
+
 listenerStatus(){
 	echo ""
 	echo $data
