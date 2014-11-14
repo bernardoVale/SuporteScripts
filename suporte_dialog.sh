@@ -35,22 +35,39 @@ export TOP_PID=$$
 #-----------------------------------------------------------
 #               UTILITÁRIOS DO DIALOG
 #
-#   São declaradas aqui funções de configuração do DIALOG.
+#   São declaradas aqui funções de exibição do menu.
 #------------------------------------------------------------
 backtitle(){
     echo "LB2 - Leading Business to the Next Level"
 }
 cabecalho(){
-    echo "             Servidor: LB2-Dev12c \n \n \n
-                                RESPONSABILIDADES \n \n \n
+    echo -e "\n\t\t\t\t \Z1RESPONSABILIDADES\Zn \n
     Oracle Database: Oracle 12c - Container Database (cdbdev) \n
     Oracle Database(pdbhd): Banco de desenvolvimento do Helpdesk \n
-    Oracle Database(pdbsp): Banco de desenvolvimento do Sales Collaboration"
+    Oracle Database(pdbsp): Banco de desenvolvimento do Sales Collaboration \n
+    $CURRENT_STATUS"
 }
-define_option(){
-    echo "Oracle Status"
+#############################################################
+#-----------------------------------------------------------
+#           DECLARAÇÃO DAS OPÇÕES DO MENU
+#
+#   Função para definir as opções do menu inicial.
+#
+# $OPTIONS = Variável Global
+#
+# "nome retornado" "Texto exibido na frente (Descrição)"
+# O "nome retornado" será comparado no IF do método
+# choose_script
+#------------------------------------------------------------
+build_options(){
+    options=("Oracle Status" "Verifica o status de todas as instancias Oracle"
+         "Iniciar Oracle" "Inicia todos os bancos e listeners do ambiente"
+         "Parar Oracle" "Desliga todos os bancos e listeners do ambiente"
+         "Listener Status" "Verifica o status de todos os listeners"
+         "Parar Listener" "Desliga todos os listeners do ambiente"
+         "Iniciar Listener" "Desliga todos os listeners do ambiente")
 }
-
+#############################################################
 #############################################################
 #-----------------------------------------------------------
 #           DECLARAÇÃO DOS NOMES NO MENU
@@ -63,7 +80,6 @@ define_option(){
 #       para definir qual script será chamado
 #------------------------------------------------------------
 choose_script(){
-    echo "$1" > /home/suporte/variavel.log
     if [ "$1" == "Oracle Status" ]; then
         SCRIPT=$(oracle_status)
     elif [ "$1" == "Iniciar Oracle" ]; then
@@ -106,6 +122,24 @@ listener_stop(){
 }
 ################################################################
 #-----------------------------------------------------------
+#               CURRENT STATUS
+#
+#   Método com objetivo de executar os scripts de status
+# ao iniciar o menu.
+#
+#   Variável Global= CURRENT_STATUS resultado dos scripts
+# seu valor é adicionado no método CABECALHO
+#------------------------------------------------------------
+current_status(){
+    CURRENT_STATUS="\t\t\t\t \Z4\ZbStatus do Ambiente\Zn \n \n"
+    script_01=$(oracle_status)
+    script_02=$(listener_status)
+    CURRENT_STATUS="$CURRENT_STATUS `eval ${script_01}`"
+    # Script do listener precisar ser melhorado para trazer um resultado user-friendly
+    #CURRENT_STATUS="$CURRENT_STATUS `eval ${script_02}`"
+}
+################################################################
+#-----------------------------------------------------------
 #               REBUILD LOG
 #
 #   Método necessário para eliminar o lixo do LOG_FILE
@@ -117,21 +151,28 @@ rebuild_log(){
     touch ${LOG_FILE}
 }
 #############################################################
+#-----------------------------------------------------------
+#               MAIN METHOD
+#
+#   Aqui esta o ciclo do script que consiste em exibir um
+# menu com as opções definidas no método BUILD_OPTIONS
+# e configuradas no CHOOSE_SCRIPT.
+#
+#  Este método não precisa ser modificado.
+#------------------------------------------------------------
 while true
 do
+    current_status
     CABECALHO=$(cabecalho)
-    #OPTIONS=$(define_option)
-    RESPOSTA=$(${DIALOG} --stdout --no-collapse --backtitle 'LB2 - Leading Business to the Next Level' \
-    --title 'OPÇÕES' --menu "$CABECALHO" 0 0 0 \
-       "$(define_option)"    'Verifica o status das instancias de Oracle DB' \
-       Iniciar\ Oracle    'Inicia todos os bancos e listeners do ambiente' \
-       Parar\ Oracle    'Desliga todos os bancos e listeners do ambiente' \
-       Listener\ Status    'Verifica o status de todos os listeners' \
-       Parar\ Listener    'Desliga todos os listeners do ambiente' \
-       Iniciar\ Listener    'Desliga todos os listeners do ambiente' )
+    build_options
+    cmd=(${DIALOG} --colors --stdout --no-collapse --backtitle "$(backtitle)" \
+    --title 'LB2-Dev12c' --menu "$CABECALHO" 0 0 0)
+    RESPOSTA=$("${cmd[@]}" "${options[@]}")
     choose_script "$RESPOSTA"
     rebuild_log
     ${SCRIPT} >> ${LOG_FILE} 2>&1 &
-    (dialog --colors --no-kill --backtitle "$(backtitle)" --title 'Aguarde o Resultado...' --tailbox $LOG_FILE 80 120 )
+    (dialog --colors --no-kill --backtitle "$(backtitle)" --title 'Aguarde o Resultado...' \
+    --tailbox $LOG_FILE 80 120 )
 done
 exit
+#############################################################
